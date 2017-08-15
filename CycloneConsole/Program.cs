@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Cyclone.Web;
 
 namespace CycloneConsole
 {
@@ -10,6 +11,35 @@ namespace CycloneConsole
     {
         static void Main(string[] args)
         {
+            try
+            {
+                var app = new Application();
+                app.LogWriter = new LogWriter();
+                app.AddRoute("/", typeof(MainHandler));
+                app.Listen("7000");
+                app.Start();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Console.ReadLine();
+            }
+        }
+    }
+
+    class MainHandler : RequestHandler
+    {
+        public override void Get()
+        {
+            Write("Hello World!");
+        }
+    }
+
+    class LogWriter : ILogWriter
+    {
+        public void WriteLine(string message)
+        {
+            Console.WriteLine(message);
         }
     }
 }
