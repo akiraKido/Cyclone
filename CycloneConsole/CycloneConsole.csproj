@@ -50,9 +50,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CycloneStandard\CycloneStandard.csproj">
-      <Project>{d25a19a5-179e-4694-b84c-ee83b42bdcbc}</Project>
-      <Name>CycloneStandard</Name>
+    <ProjectReference Include="..\Cyclone\Cyclone.csproj">
+      <Project>{07413b61-e4d3-4ee5-892e-6062e217581e}</Project>
+      <Name>Cyclone</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
