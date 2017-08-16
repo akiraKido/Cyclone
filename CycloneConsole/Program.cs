@@ -9,9 +9,11 @@ namespace CycloneConsole
         {
             try
             {
-                var app = new Application();
+                var app = new Application
+                {
+                    {"/", typeof(MainHandler)}
+                };
                 app.LogWriter = new LogWriter();
-                app.AddRoute("/", typeof(MainHandler));
                 app.Listen("7000");
                 app.Start();
             }

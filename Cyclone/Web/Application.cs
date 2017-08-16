@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 
 namespace Cyclone.Web
 {
 
-    public class Application
+    public class Application : IEnumerable
     {
         public ILogWriter LogWriter { private get; set; }
 
@@ -24,6 +25,11 @@ namespace Cyclone.Web
         }
 
         public void AddRoute(string path, Type requestHandler)
+        {
+            Add(path, requestHandler);
+        }
+
+        public void Add(string path, Type requestHandler)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (requestHandler == null) throw new ArgumentNullException(nameof(requestHandler));
@@ -68,5 +74,6 @@ namespace Cyclone.Web
             
         }
 
+        public IEnumerator GetEnumerator() => throw new NotSupportedException();
     }
 }
