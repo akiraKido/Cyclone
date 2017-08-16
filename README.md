@@ -1,8 +1,10 @@
 # Cyclone
 
 This is a Tornado clone written in C#.
-Uses .NET Framework 4.7.
+
 To use Cyclone, import the Cyclone C# project to your project (for now).
+
+- Supports .NET Standard 2.0
 
 # Hello, World!
 
