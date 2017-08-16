@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CycloneConsole", "CycloneCo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cyclone", "Cyclone\Cyclone.csproj", "{07413B61-E4D3-4EE5-892E-6062E217581E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CycloneStandard", "CycloneStandard\CycloneStandard.csproj", "{D25A19A5-179E-4694-B84C-EE83B42BDCBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{07413B61-E4D3-4EE5-892E-6062E217581E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{07413B61-E4D3-4EE5-892E-6062E217581E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{07413B61-E4D3-4EE5-892E-6062E217581E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D25A19A5-179E-4694-B84C-EE83B42BDCBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D25A19A5-179E-4694-B84C-EE83B42BDCBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D25A19A5-179E-4694-B84C-EE83B42BDCBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D25A19A5-179E-4694-B84C-EE83B42BDCBC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
