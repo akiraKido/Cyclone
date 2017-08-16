@@ -32,8 +32,11 @@ namespace CycloneConsole
         {
             try
             {
-                var app = new Application();
-                app.AddRoute("/", typeof(MainHandler));
+                var app = new Application
+                {
+                    // Add Routes here
+                    {"/", typeof(MainHandler)}
+                };
                 app.Listen("7000");
                 app.Start();
             }
