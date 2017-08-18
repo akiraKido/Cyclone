@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
+using System.Reflection;
+using Cyclone.Utils;
 
 namespace Cyclone.Web
 {
 
     public class Application : IEnumerable
     {
+        public static string ExecutionPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
         public ILogWriter LogWriter { private get; set; }
+        public string TemplatePath { internal get; set; }
 
         private readonly HttpListener _listener;
         private readonly List<RouteOption> _handlers = new List<RouteOption>();
@@ -20,8 +27,8 @@ namespace Cyclone.Web
 
             _listener = new HttpListener();
             _requestProcessor = serverOptions.MultiThread
-                ? (IRequestProcessor)new MultiThreadRequestProcessor(_handlers)
-                : new SingleThreadRequestProcessor(_handlers);
+                ? (IRequestProcessor)new MultiThreadRequestProcessor()
+                : new SingleThreadRequestProcessor();
         }
 
         public void AddRoute(string path, Type requestHandler)
@@ -63,7 +70,11 @@ namespace Cyclone.Web
                 {
                     HttpListenerContext context = _listener.GetContext();
                     LogWriter?.WriteLine($"{DateTime.Now}\t{context.Request.HttpMethod}\t{context.Request.Url}");
-                    _requestProcessor.Process(context);
+
+                    RequestHandler handler = GetHandler(context.Request.Url.LocalPath);
+                    handler.Application = this;
+
+                    _requestProcessor.Process(handler, context);
                 }
             }
             catch (Exception e)
@@ -72,6 +83,23 @@ namespace Cyclone.Web
                 throw;
             }
             
+        }
+
+        private RequestHandler GetHandler( string path )
+        {
+            RouteOption handlerRouteOption =
+                _handlers.FirstOrDefault
+                (
+                    handler => handler.RouteRegex.Match(path).Success
+                );
+            return handlerRouteOption == null
+                ? new DefaultErrorHandler() 
+                : handlerRouteOption.RequestHandler.Instantiate();
+        }
+
+        private sealed class DefaultErrorHandler : RequestHandler
+        {
+            internal DefaultErrorHandler() { WriteError(); }
         }
 
         public IEnumerator GetEnumerator() => throw new NotSupportedException();

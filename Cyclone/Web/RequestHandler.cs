@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
+using Cyclone.Template;
 
 namespace Cyclone.Web
 {
     public abstract class RequestHandler
     {
+        internal Application Application { private get; set; }
+
         internal byte[] Content { get; private set; } = { };
 
         public virtual void Get() { WriteError(); }
@@ -24,6 +24,15 @@ namespace Cyclone.Web
         public virtual void WriteError()
         {
             Write( "404 - Page not found" );
+        }
+
+        public void Render<T>( string fileName, T model )
+        {
+            var templatePath = Path.Combine( Application.TemplatePath, fileName );
+            if(!File.Exists( templatePath )) throw new FileNotFoundException(templatePath);
+
+            var result = TemplateBuilder.Build( File.ReadAllText(templatePath), model );
+            Content = Content.Concat( Encoding.UTF8.GetBytes(result) ).ToArray();
         }
 
         internal void Handle( HttpListenerRequest request )
