@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -21,6 +22,11 @@ namespace Cyclone.Web
             Content = Content.Concat(Encoding.UTF8.GetBytes(message)).ToArray();
         }
 
+        public virtual void WriteServerError(Exception e = null)
+        {
+            Write( "500 - Internal server error." );
+        }
+
         public virtual void WriteError()
         {
             Write( "404 - Page not found" );
@@ -38,11 +44,18 @@ namespace Cyclone.Web
 
         internal void Handle( HttpListenerRequest request )
         {
-            switch (request.HttpMethod)
+            try
             {
-                case "GET" : Get();         break;
-                case "POST": Post();        break;
-                default    : WriteError();  break;
+                switch (request.HttpMethod)
+                {
+                    case "GET": Get(); break;
+                    case "POST": Post(); break;
+                    default: WriteError(); break;
+                }
+            }
+            catch ( Exception e )
+            {
+                WriteServerError(e);
             }
         }
     }
