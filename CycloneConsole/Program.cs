@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Cyclone.Web;
 
@@ -15,7 +16,7 @@ namespace CycloneConsole
                     { "/", typeof( MainHandler )}
                 };
                 app.LogWriter = new LogWriter();
-                app.TemplatePath = Path.Combine( Application.ExecutionPath, "Templates" );
+                app.TemplatePath = Path.Combine(Application.ExecutionPath, "Templates");
                 app.Listen("7000");
                 app.Start();
             }
@@ -25,7 +26,7 @@ namespace CycloneConsole
                 Console.ReadLine();
             }
         }
-        
+
     }
 
     class MainHandler : RequestHandler
@@ -33,7 +34,8 @@ namespace CycloneConsole
         public override void Get()
         {
             //Write("Hello World!");
-            Render( "index.html", new {name = "world!"} );
+            var List = new List<string> { "a", "b", "c" };
+            Render("index.html", new { name = "world!", list = List });
         }
     }
 

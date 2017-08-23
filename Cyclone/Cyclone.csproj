@@ -6,9 +6,4 @@
     <RootNamespace>Cyclone</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="2.3.1" />
-    <PackageReference Include="System.CodeDom" Version="4.4.0" />
-  </ItemGroup>
-
 </Project>

@@ -6,6 +6,12 @@
     <title></title>
 </head>
 <body>
-    Hello {% name %}
+<!-- basic model access sample -->
+Hello {{ name }}
+
+<!-- foreach sample -->
+{{ foreach(var item in list) }}
+<p>{{ item }}</p>
+
 </body>
 </html>

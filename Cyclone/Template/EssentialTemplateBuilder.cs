@@ -1,154 +1,129 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
+using System.Collections;
 using Cyclone.Utils;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.Emit;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Cyclone.Template
 {
-    public abstract class TemplateGenerator
+    internal static class CharReaderExtensions
     {
-        public abstract string Generate<T>(T model);
-
-        protected static object GetField<T>(T obj, string field)
+        internal static string GetUntilCode(this CharReader reader)
         {
-            var target = Expression.Parameter(typeof(object), "target");
-
-            var lambda = _cache.GetOrAdd($"{nameof(T)}_{field}",
-                Expression.Lambda<Func<object, object>>
-                (
-                    Expression.PropertyOrField
-                    (
-                        Expression.Convert(target, typeof(T)),
-                        field
-                    ),
-                    target
-                ).Compile());
-            return lambda(obj);
+            return reader.TakeUntil((current, peek) => current == '{' && (peek == '{' || peek == '%'));
         }
-        private static readonly ConcurrentDictionary<string, Func<object, object>> _cache = new ConcurrentDictionary<string, Func<object, object>>();
+
+        internal static string GetCode(this CharReader reader)
+        {
+            reader.SkipWhile(c => c == '{' || c == '%');
+            var code = reader.TakeUntil((current, peek) => (current == '}' || current == '%') && peek == '}').Trim();
+            reader.SkipWhile(c => c == '}' || c == '%');
+            return code.Trim();
+        }
     }
 
-    public sealed class EssentialTemplateBuilder : ITemplateBuilder
+    internal struct LoopPrototype
+    {
+        public LoopPrototype(string variableName, IEnumerable iterableObject)
+        {
+            IterableObject = iterableObject;
+            VariableName = variableName;
+        }
+
+        public IEnumerable IterableObject { get; }
+        public string VariableName { get; }
+    }
+
+    public sealed class EssentialTemplateBuilder : TemplateBuilder
     {
         internal static readonly EssentialTemplateBuilder Instance = new EssentialTemplateBuilder();
         private EssentialTemplateBuilder() { }
 
-        private static readonly string AssemblyDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
-        private static readonly MetadataReference[] References = {
-            MetadataReference.CreateFromFile( typeof(object).Assembly.Location ),
-            MetadataReference.CreateFromFile( Path.Combine( AssemblyDirectory, "netstandard.dll" ) ),
-            MetadataReference.CreateFromFile( Path.Combine( AssemblyDirectory, "System.dll" ) ),
-            MetadataReference.CreateFromFile( Path.Combine( AssemblyDirectory, "System.Runtime.dll" ) ),
-            MetadataReference.CreateFromFile( Path.Combine( AssemblyDirectory, "System.Core.dll" ) ),
-            MetadataReference.CreateFromFile( typeof(TemplateGenerator).Assembly.Location ),
-        };
+        private static readonly char BracketBegin = '(';
+        private static readonly char BracketEnd = ')';
 
-        private static readonly object LockObject = new object();
-        private static int index = 0;
-
-        public string Build<T>(string template, T model)
+        public override string Build<T>(string template, T model)
         {
-            var hash = template.GenerateHash();
+            // If no models exist, just give back the template.
+            if (model == null) return template;
 
-            TemplateGenerator templateGenerator = Cache.GetOrAdd(hash, _ =>
+            var result = string.Empty;
+            var reader = new CharReader(template);
+
+            while (reader.HasNext)
             {
-                lock (LockObject)
+                result += reader.GetUntilCode();
+                string codeComponent = reader.GetCode();
+                if (!string.IsNullOrWhiteSpace(codeComponent))
                 {
-                    var reader = new CharReader(template);
-
-                    var workspace = new AdhocWorkspace();
-                    var generator = SyntaxGenerator.GetGenerator(workspace, "C#");
-
-                    var resultDeclaration = ParseStatement("string result = string.Empty;");
-
-                    var statements = new List<SyntaxNode> {
-                        resultDeclaration,
-                    };
-
-                    while (reader.HasNext)
+                    var codeReader = new CharReader(codeComponent);
+                    var command = codeReader.PeekWhile(char.IsLetterOrDigit);
+                    switch (command)
                     {
-                        var line = reader.TakeUntil((c, next) => c == '{' && (next == '{' || next == '%'));
-                        line = line.Replace("\"", "\"\"");
-                        statements.Add(ParseStatement($"result += @\"{line}\";"));
-                        reader.SkipWhile(c => c == '{' || c == '%');
-                        string code = reader.TakeUntil((c, next) => (c == '}' || c == '%') && next == '}').Trim();
-                        if (!string.IsNullOrWhiteSpace(code))
-                        {
-                            statements.Add(ParseStatement($"result += GetField(model, \"{code}\");"));
-                        }
-                        reader.SkipWhile(c => c == '}' || c == '%');
-                    }
-
-                    statements.Add(ParseStatement("return result;"));
-
-                    var generateMethod = generator.MethodDeclaration
-                    (
-                        "Generate",
-                        typeParameters: new[] { "T" },
-                        modifiers: DeclarationModifiers.Override,
-                        parameters: new[] { generator.ParameterDeclaration("model", ParseTypeName("T")) },
-                        returnType: ParseTypeName("string"),
-                        accessibility: Accessibility.Public, statements: statements
-                    );
-
-                    var className = $"TemplateClass{index++}";
-
-                    var classDefinition = generator.ClassDeclaration
-                    (
-                        className,
-                        accessibility: Accessibility.Public,
-                        interfaceTypes: new[] { ParseTypeName($"{nameof(Cyclone)}.{nameof(Template)}.{nameof(TemplateGenerator)}") },
-                        members: new[] { generateMethod }
-                    );
-
-
-                    var nameSpace = generator.NamespaceDeclaration(nameof(Cyclone), classDefinition);
-
-                    var node = generator.CompilationUnit(nameSpace).NormalizeWhitespace();
-
-                    var compilation = CSharpCompilation.Create(
-                        "InMemory",
-                        new[] { node.SyntaxTree },
-                        references: References,
-                        options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, usings: new[] { "Cyclone.Template", "System" }));
-
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        EmitResult emitResult = compilation.Emit(memoryStream);
-                        if (emitResult.Success)
-                        {
-                            memoryStream.Seek(0, SeekOrigin.Begin);
-                            var asm = Assembly.Load(memoryStream.ToArray());
-                            Type _class = asm.GetType(className);
-                            TemplateGenerator g = (TemplateGenerator)Activator.CreateInstance(_class);
-                            return g;
-                        }
-
-                        IEnumerable<Diagnostic> failures = emitResult.Diagnostics.Where(diagnostic =>
-                            diagnostic.IsWarningAsError ||
-                            diagnostic.Severity == DiagnosticSeverity.Error);
-
-                        foreach (Diagnostic diagnostic in failures)
-                        {
-                            Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
-                        }
-                        return null;
+                        case "foreach":
+                            var loopPrototype = GetLoopPrototype(codeReader, model);
+                            var loopTemplate = GetLoopTemplate(reader);
+                            result += BuildLoop(loopPrototype, loopTemplate, model);
+                            break;
+                        default:
+                            result += GetField(model, command).ToString();
+                            break;
                     }
                 }
-            });
+            }
 
-            return templateGenerator.Generate(new { hoge = "test" }); ;
+            return result;
         }
 
-        private static readonly ConcurrentDictionary<string, TemplateGenerator> Cache = new ConcurrentDictionary<string, TemplateGenerator>();
+        private static LoopPrototype GetLoopPrototype<T>(CharReader reader, T model)
+        {
+            reader.Eat("foreach");
+            reader.Eat(BracketBegin);
+            reader.Eat("var");
+            string variableName = reader.TakeWhile(char.IsLetterOrDigit);
+            reader.Eat("in");
+            string fieldName = reader.TakeWhile(char.IsLetterOrDigit);
+            reader.Eat(BracketEnd);
+
+            object iterableObject = GetField(model, fieldName);
+            if (!(iterableObject is IEnumerable))
+            {
+                throw new Exception($"{fieldName} is not iterable.");
+            }
+            return new LoopPrototype(variableName, (IEnumerable)iterableObject);
+        }
+
+        private static string GetLoopTemplate(CharReader reader)
+        {
+            var result = string.Empty;
+            while (true)
+            {
+                result += reader.GetUntilCode();
+                var loopCode = reader.GetCode();
+                if (loopCode == "end") break;
+                if (string.IsNullOrWhiteSpace(loopCode)) throw new Exception("Nothing found in bracket. You might be missing {{ end }} for a loop.");
+                result += $"{{{{ {loopCode} }}}}";
+            }
+            return result;
+        }
+
+        private static string BuildLoop<T>(LoopPrototype prototype, string loopTemplate, T model)
+        {
+            var result = string.Empty;
+            var template = new CharReader(loopTemplate);
+            foreach (var current in prototype.IterableObject)
+            {
+                while (template.HasNext)
+                {
+                    result += template.GetUntilCode();
+                    string inLoopCode = template.GetCode();
+                    if (string.IsNullOrWhiteSpace(inLoopCode)) { break; }
+                    result += inLoopCode == prototype.VariableName
+                        ? current.ToString()
+                        : GetField(model, inLoopCode).ToString();
+                }
+                template.Reset();
+            }
+            return result;
+        }
+
     }
 }

@@ -21,20 +21,27 @@ namespace Cyclone.Utils
             _skipOptions = skipOptions;
         }
 
+        internal void Reset() => _index = 0;
         internal bool HasNext => _index < _text.Length;
         internal char Current => HasNext ? _text[_index] : '\0';
         internal bool CanPeek => _index + 1 < _text.Length;
         internal char Peek => CanPeek ? _text[_index + 1] : '\0';
+        private string CurrentString => Current == '\0' ? "EOF" : Current.ToString();
 
         internal void MoveNext()
         {
             _index++;
-            if (_skipOptions == SkipOptions.SkipWhiteSpace) SkipWhiteSpace();
+            PerformSkip();
         }
 
         internal void MoveNext(int count)
         {
             _index += count;
+            PerformSkip();
+        }
+
+        private void PerformSkip()
+        {
             if (_skipOptions == SkipOptions.SkipWhiteSpace) SkipWhiteSpace();
         }
 
@@ -79,7 +86,37 @@ namespace Cyclone.Utils
             }
             var result = _text.Substring(startIndex, _index - startIndex);
             return result;
-
         }
+
+        internal void Eat( char c )
+        {
+            if(Current != c) throw new Exception($"Expected: {c} but found {CurrentString}");
+            MoveNext();
+        }
+
+        internal void Eat( string s )
+        {
+            PerformSkip();
+
+            int i = 0;
+            while ( i < s.Length )
+            {
+                if(Current != s[i]) throw new Exception($"For: {s}, expected: {s[i]}, but found {CurrentString}");
+                MoveNext();
+                i += 1;
+            }
+        }
+
+        internal string PeekWhile( Func<char, bool> predicate )
+        {
+            int startIndex = _index;
+            int length = 0;
+            while ( startIndex + length < _text.Length && predicate( _text[startIndex + length] ) )
+            {
+                length += 1;
+            }
+            return _text.Substring( startIndex, length );
+        }
+        
     }
 }
