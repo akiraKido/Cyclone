@@ -36,9 +36,9 @@ namespace Cyclone.Web
         {
             var templatePath = Path.Combine( Application.TemplatePath, fileName );
             if(!File.Exists( templatePath )) throw new FileNotFoundException(templatePath);
-
-            //var result = LowEndTemplateBuilder.Instance.Build( File.ReadAllText(templatePath), model );
-            var result = EssentialTemplateBuilder.Instance.Build(File.ReadAllText(templatePath), model);
+            
+            var templateBuilder = new EssentialTemplateBuilder();
+            var result = templateBuilder.Build( File.ReadAllText( templatePath ), model );
             Content = Content.Concat( Encoding.UTF8.GetBytes(result) ).ToArray();
         }
 
@@ -56,6 +56,7 @@ namespace Cyclone.Web
             catch ( Exception e )
             {
                 WriteServerError(e);
+                Console.WriteLine(e);
             }
         }
     }

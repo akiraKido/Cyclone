@@ -6,12 +6,29 @@
     <title></title>
 </head>
 <body>
-<!-- basic model access sample -->
-Hello {{ name }}
+    <!-- basic model access sample -->
+    Hello {{ name }}
 
-<!-- foreach sample -->
-{{ foreach(var item in list) }}
-<p>{{ item }}</p>
+    <!-- foreach sample -->
+    {{ foreach(var item in list) }}
+        <p>{{ item }}</p>
+    {{ end }}
+
+    <!-- if sample -->
+    {{ if(name != null)}}
+        <p>Name = {{ name }}</p>
+    {{ end }}
+
+    {{ if(token == null)}}
+        <p>Name = {{ token }}</p>
+    {{ end }}
+
+    <!-- nested if sample -->
+    {{ if(name != null) }}
+        {{ foreach(var item in list) }}
+            <p>{{ item }}</p>
+        {{ end }}
+    {{ end }}
 
 </body>
 </html>

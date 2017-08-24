@@ -8,7 +8,7 @@ namespace Cyclone.Template
     {
         public abstract string Build<T>(string template, T model);
 
-        protected static object GetField<T>(T obj, string field)
+        internal static object GetField<T>(T obj, string field)
         {
             var factory = Cache.GetOrAdd($"{nameof(T)}_{field}", _ =>
                 {

@@ -5,12 +5,8 @@ using Cyclone.Utils;
 
 namespace Cyclone.Template
 {
-    public sealed class LowEndTemplateBuilder : TemplateBuilder
+    internal sealed class LowEndTemplateBuilder : TemplateBuilder
     {
-        public static readonly LowEndTemplateBuilder Instance = new LowEndTemplateBuilder();
-
-        private LowEndTemplateBuilder() { }
-
         public override string Build<T>(string template, T model)
         {
             // If no models exist, just give back the template.

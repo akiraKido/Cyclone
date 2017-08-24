@@ -35,8 +35,15 @@ namespace CycloneConsole
         {
             //Write("Hello World!");
             var List = new List<string> { "a", "b", "c" };
-            Render("index.html", new { name = "world!", list = List });
+            Render("index.html", new Hoge{ name = "world!", list = List, token = null });
         }
+    }
+
+    class Hoge
+    {
+        public string name { get; set; }
+        public IEnumerable<string> list { get; set; }
+        public string token { get; set; }
     }
 
     class LogWriter : ILogWriter
